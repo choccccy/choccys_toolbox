@@ -1,2 +1,3 @@
-# choccys_toolbox
-choccy's commonly used bits and bobs
+# choccy-utils
+
+Just some simple utilities# choccys_toolbox

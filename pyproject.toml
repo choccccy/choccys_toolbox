@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "choccys_toolbox"
+dynamic = ["version"]
+description = "Choccy's commonly used utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+keywords = []
+authors = [
+  { name = "Osi Ogbuji", email = "osita@ogbuji.net" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+]
+
+[tool.hatch.version]
+path = "pylib/__about__.py"
+
+# Rewriting path in distribution
+[tool.hatch.build.sources]
+"pylib" = "choccys_toolbox"

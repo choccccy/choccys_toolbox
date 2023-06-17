@@ -15,8 +15,6 @@ async def throbber(frame_time: float=0.15):
     '''
     import asyncio
 
-    global THROBBER_GFX
-
     while True:
         for x in THROBBER_GFX:
             print

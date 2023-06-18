@@ -40,8 +40,10 @@ import asyncio
 import discord
 from dotenv import load_dotenv
 
+# Import from langchain for handling LLM management
 from langchain import OpenAI
 
+# Imports from OgbujiPT for handling LLM prompting
 from ogbujipt.config import openai_emulation
 from ogbujipt.async_helper import schedule_llm_call
 from ogbujipt.model_style.alpaca import prep_instru_inputs, ALPACA_PROMPT_TMPL
@@ -51,42 +53,60 @@ from ogbujipt.model_style.alpaca import prep_instru_inputs, ALPACA_PROMPT_TMPL
 intents = discord.Intents.default()
 intents.message_content = True
 
+# Setting up a 'client' object that represents the bot
 client = discord.Client(intents=intents)
+
+
 
 @client.event
 async def on_ready():
+    '''
+    Print to console when bot successfully connects to Discord's API
+    '''
     print(f"J. Jonah Jameson is ready. Connected to {len(client.guilds)} guild(s).\n")
+
 
 async def send_llm_msg(prompt, msg):
     '''
     Schedule the LLM request
+    Print prompt and response
     '''
-    
     instru_inputs = ALPACA_PROMPT_TMPL.format(
         instru_inputs=prep_instru_inputs(prompt, inputs=msg))
+    
     print('=' * 80)
     print('PROMPT:')
     print(prompt)
+    print('INPUT:')
+    print(msg)
 
+    # Call LLM
     response = await schedule_llm_call(llm, instru_inputs)
-    print('\nRESPONSE FROM LLM:\n', response)
+
+    print('' * 12, end='\r')
+    print('RESPONSE FROM LLM:')
+    print(response)
+
     return response
 
 
+# ToDo: replace this with a regular expression re.sub()
 def cut_out_string(input_string, string_to_cut):
+    '''
+    Cut string_to_cut out of input_string
+    Return the string without the cutout
+    '''
     output_string = input_string.partition(string_to_cut)
+
     return output_string[0] + output_string[2]
-
-
-# List of characters that will be displayed, in order, by the throbber
-#THROBBER_GFX = ["|", "/", "-", "-", "\\"]
-THROBBER_GFX = ["◢", "◣", "◤", "◥"]
 
 
 async def throbber(frame_time: float=0.15):
     '''
-    prints a spinning throbber with a frame time as argument
+    Prints a spinning throbber to console with specified frame time
     '''
+    THROBBER_GFX = ["◢", "◣", "◤", "◥"]
+
     while True:
         for x in THROBBER_GFX:
             print
@@ -96,6 +116,9 @@ async def throbber(frame_time: float=0.15):
 
 @client.event
 async def on_message(ctx):
+    '''
+    Message receipt and response
+    '''
     # Ignore the bot's own messages & respond only to @mentions
     # The client.user.id check creens out @everyone & @here pings
     # FIXME: Better content check—what if the bot's id is a common word?
@@ -109,7 +132,9 @@ async def on_message(ctx):
     mention_str = f'<@{client.user.id}>'
     clean_msg = cut_out_string(ctx.content, mention_str)
 
-    prompt = 'quip as if you are the character \'J. Jonah Jameson\' from Spider-Man, then type out the edited text as requested, in quotes.'
+    # Set up prompt
+    prompt = 'quip as if you are the character \'J. Jonah Jameson\' from Spider-Man, '\
+        'then type out the edited text as requested, in quotes.'
 
     # Show the prompt if the user types [show_prompt] anywhere in the message
     verbose_flag = '[show_prompt]'
@@ -117,25 +142,34 @@ async def on_message(ctx):
         clean_msg = cut_out_string(clean_msg, verbose_flag)
         await ctx.channel.send(f'`{prompt}`')
 
-    # Send message containing throbber:
+    # Send message to discord containing throbber:
     msg = await ctx.channel.send('<a:oori_throbber:1119445227732742265>')
 
+    # Collect task coroutines
     tasks = [
         asyncio.create_task(send_llm_msg(prompt, clean_msg)), 
         asyncio.create_task(throbber())
         ]
 
-    # run FIRST task until completed
+    # Run tasks until the first completes, or 15 seconds occour
     done, pending = await asyncio.wait(
         tasks, 
-        return_when=asyncio.FIRST_COMPLETED
+        return_when=asyncio.FIRST_COMPLETED, 
+        timeout=15
         )
 
-    response = next(iter(done)).result()
-    for t in pending:
-        t.cancel()
+    # Cancel remaining tasks
+    for tsk in pending:
+        tsk.cancel()
 
-    await msg.edit(content=response)
+    # Edit the discord message to be the LLM response
+    if not done:
+        print('LLM not responding!', end='\r')
+        await msg.edit(content='`LLM not responding!`')
+    else:
+        response = next(iter(done)).result()
+        await msg.edit(content=response)
+
 
 
 def main():

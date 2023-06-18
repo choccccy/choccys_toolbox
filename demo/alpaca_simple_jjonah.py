@@ -1,5 +1,5 @@
 '''
-Advanced demo of a Discord chatbot with an LLM back end
+Advanced demo of a Discord chatbot with an LLM back end, flavored with a fictional character.
 
 Demonstrates async processing via ogbujipt.async_helper & Discord API integration.
 Users can make an LLM request by @mentioning the bot by its user ID
@@ -25,6 +25,8 @@ DISCORD_TOKEN={your-bot-token}
 LLM_HOST=http://my-llm-host
 LLM_PORT=8000
 LLM_TEMP=0.5
+LLM_SUBSTYLE=ALPACA_INSTRUCT
+LLM_TIMEOUT=60
 ```
 
 Then to launch the bot:
@@ -34,11 +36,15 @@ python demo/alpaca_simple_qa_discord.py
 ```
 '''
 
+# Import standard libraries
 import os
 import asyncio
 import re
 
+# Import discord.py for interaction with Discord API
 import discord
+
+# Import dotenv to load from .env file
 from dotenv import load_dotenv
 
 # Import from langchain for handling LLM management
@@ -47,7 +53,13 @@ from langchain import OpenAI
 # Imports from OgbujiPT for handling LLM prompting
 from ogbujipt.config import openai_emulation
 from ogbujipt.async_helper import schedule_llm_call
-from ogbujipt.model_style.alpaca import prep_instru_inputs, ALPACA_PROMPT_TMPL
+from ogbujipt.model_style.alvic import make_prompt, sub_style
+
+# Set up lookup table for different LLM prompting substyles
+substyles = {
+    'ALPACA': sub_style.ALPACA,
+    'ALPACA_INSTRUCT': sub_style.ALPACA_INSTRUCT
+    }
 
 # Enable all standard intents, plus message content
 # The bot app you set up on Discord will require this intent (Bot tab)
@@ -56,7 +68,6 @@ intents.message_content = True
 
 # Setting up a 'client' object that represents the bot
 client = discord.Client(intents=intents)
-
 
 
 @client.event
@@ -72,36 +83,34 @@ async def send_llm_msg(prompt, msg):
     Schedule the LLM request
     Print prompt and response
     '''
-    instru_inputs = ALPACA_PROMPT_TMPL.format(
-        instru_inputs=prep_instru_inputs(prompt, inputs=msg))
+    # Format prompt for chosen substyle
+    LLM_SUBSTYLE = os.getenv('LLM_SUBSTYLE')
+    instru_inputs = make_prompt(
+        prompt, 
+        inputs=msg,
+        sub=substyles[LLM_SUBSTYLE]
+        )
     
+    # Print prompt and user input to console
     print('=' * 80)
     print('PROMPT:')
     print(prompt)
     print('INPUT:')
     print(msg)
 
+    print('MADE_PROMPT:')
+    print(instru_inputs)
+
     # Call LLM
     response = await schedule_llm_call(llm, instru_inputs)
 
+    # print LLM response to console
     print('' * 12, end='\r')
     print('RESPONSE FROM LLM:')
     print(response)
 
+    # Return LLM response
     return response
-
-
-# ToDo: replace this with a regular expression re.sub()
-def cut_out_string(input_string, string_to_cut):
-    '''
-    Cut string_to_cut out of input_string
-    Return the string without the cutout
-    '''
-    output_string = re.sub(pattern=string_to_cut, repl='', string=input_string)
-
-    output_string = input_string.partition(string_to_cut)
-
-    return output_string[0] + output_string[2]
 
 
 async def throbber(frame_time: float=0.15):
@@ -110,11 +119,10 @@ async def throbber(frame_time: float=0.15):
     '''
     THROBBER_GFX = ["◢", "◣", "◤", "◥"]
 
-    while True:
-        for x in THROBBER_GFX:
-            print
-            print(f" [{x}]", end="\r", flush=True) # print graphics
-            await asyncio.sleep(frame_time)        # delay
+    while True:                                        # Loop forever (until cancelled)
+        for frame in THROBBER_GFX:                     # cycle next frame
+            print(f" [{frame}]", end="\r", flush=True) # print frame
+            await asyncio.sleep(frame_time)            # sleep for frame-time
 
 
 @client.event
@@ -154,11 +162,12 @@ async def on_message(ctx):
         asyncio.create_task(throbber())
         ]
 
-    # Run tasks until the first completes, or 15 seconds occour
+    # Run tasks until the first completes, or when TIMEOUT seconds occour
+    LLM_TIMEOUT = int(os.getenv('LLM_TIMEOUT'))
     done, pending = await asyncio.wait(
         tasks, 
         return_when=asyncio.FIRST_COMPLETED, 
-        timeout=15
+        timeout=LLM_TIMEOUT
         )
 
     # Cancel remaining tasks
@@ -172,7 +181,6 @@ async def on_message(ctx):
     else:
         response = next(iter(done)).result()
         await msg.edit(content=response)
-
 
 
 def main():

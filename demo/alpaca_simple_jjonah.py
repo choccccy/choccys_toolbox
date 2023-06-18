@@ -36,6 +36,7 @@ python demo/alpaca_simple_qa_discord.py
 
 import os
 import asyncio
+import re
 
 import discord
 from dotenv import load_dotenv
@@ -96,6 +97,8 @@ def cut_out_string(input_string, string_to_cut):
     Cut string_to_cut out of input_string
     Return the string without the cutout
     '''
+    output_string = re.sub(pattern=string_to_cut, repl='', string=input_string)
+
     output_string = input_string.partition(string_to_cut)
 
     return output_string[0] + output_string[2]
@@ -130,7 +133,7 @@ async def on_message(ctx):
     # Assumes a single mention, for simplicity. If there are multiple,
     # All but the first will just be bundled over to the LLM
     mention_str = f'<@{client.user.id}>'
-    clean_msg = cut_out_string(ctx.content, mention_str)
+    clean_msg = re.sub(pattern=mention_str, repl='', string=ctx.content)
 
     # Set up prompt
     prompt = 'quip as if you are the character \'J. Jonah Jameson\' from Spider-Man, '\
@@ -139,7 +142,7 @@ async def on_message(ctx):
     # Show the prompt if the user types [show_prompt] anywhere in the message
     verbose_flag = '[show_prompt]'
     if verbose_flag in clean_msg:
-        clean_msg = cut_out_string(clean_msg, verbose_flag)
+        clean_msg = re.sub(pattern=verbose_flag, repl='', string=clean_msg)
         await ctx.channel.send(f'`{prompt}`')
 
     # Send message to discord containing throbber:

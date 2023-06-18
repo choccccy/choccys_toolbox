@@ -1,3 +1,3 @@
-# choccy-utils
+# choccys_toolbox
 
-Just some simple utilities# choccys_toolbox
+Just some simple utilities

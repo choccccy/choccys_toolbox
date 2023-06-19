@@ -86,14 +86,6 @@ async def send_llm_msg(msg, ctx):
     Schedule the LLM request
     Print prompt and response
     '''
-    # Show the prompt if the user types [show_prompt] anywhere in the message
-    verbose_flag = '[show_prompt]'
-    if verbose_flag in msg:
-        inter_msg = msg.partition(verbose_flag)
-        msg = inter_msg[0] + inter_msg[2]
-        await ctx.channel.send(f'`PROMPT: {prompt}`')
-        await ctx.channel.send(f'`INPUT: {msg}`')
-
     # Format prompt for chosen substyle
     LLM_SUBSTYLE = os.getenv('LLM_SUBSTYLE')
     instru_inputs = make_prompt(
@@ -151,6 +143,15 @@ async def on_message(ctx):
     mention_str = f'<@{client.user.id}>'
     inter_msg = ctx.content.partition(mention_str)
     clean_msg = inter_msg[0] + inter_msg[2]
+
+    # Show the prompt if the user types [show_prompt] anywhere in the message
+    verbose_flag = '[show_prompt]'
+    if verbose_flag in msg:
+        inter_msg = msg.partition(verbose_flag)
+        msg = inter_msg[0] + inter_msg[2]
+        await ctx.channel.send(f'`PROMPT: {prompt}`')
+        await ctx.channel.send(f'`INPUT: {msg}`')
+
 
     # Send message to discord containing throbber:
     msg = await ctx.channel.send('<a:oori_throbber:1119445227732742265>')

@@ -69,6 +69,9 @@ intents.message_content = True
 # Setting up a 'client' object that represents the bot
 client = discord.Client(intents=intents)
 
+# Set up prompt
+prompt = 'quip as if you are the character \'J. Jonah Jameson\' from \'Spider-Man,\''\
+    ' then type out the edited text as requested, in quotes.'
 
 @client.event
 async def on_ready():
@@ -83,10 +86,6 @@ async def send_llm_msg(msg, ctx):
     Schedule the LLM request
     Print prompt and response
     '''
-    # Set up prompt
-    prompt = 'quip as if you are the character \'J. Jonah Jameson\' from \'Spider-Man,\''\
-        ' then type out the edited text as requested, in quotes.'
-    
     # Show the prompt if the user types [show_prompt] anywhere in the message
     verbose_flag = '[show_prompt]'
     if verbose_flag in msg:

@@ -45,7 +45,7 @@ import discord
 
 # Import dotenv to load from .env file
 from dotenv import load_dotenv
-load_dotenv('demo/jjonah.env') # eugh, presumes running from choccys_toolbox/
+load_dotenv('demo/icebear.env') # eugh, presumes running from choccys_toolbox/
 
 # Import from langchain for handling LLM management
 from langchain import OpenAI
@@ -75,7 +75,7 @@ async def on_ready():
     '''
     Print to console when bot successfully connects to Discord's API
     '''
-    print(f"J. Jonah Jameson is ready. Connected to {len(client.guilds)} guild(s).\n")
+    print(f"Ice Bear is ready. Connected to {len(client.guilds)} guild(s).\n")
 
 
 async def send_llm_msg(msg, ctx):
@@ -84,9 +84,8 @@ async def send_llm_msg(msg, ctx):
     Print prompt and response
     '''
     # Set up prompt
-    prompt = 'quip as if you are the character \'J. Jonah Jameson\' from \'Spider-Man,\''\
-        ' then type out the edited text as requested, in quotes.'
-    
+    prompt = 'Respond as if you are the character \'Ice Bear\' from \'We Bare Bears\''
+
     # Show the prompt if the user types [show_prompt] anywhere in the message
     verbose_flag = '[show_prompt]'
     if verbose_flag in msg:

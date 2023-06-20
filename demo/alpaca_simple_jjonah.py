@@ -73,6 +73,7 @@ client = discord.Client(intents=intents)
 prompt = 'quip as if you are the character \'J. Jonah Jameson\' from \'Spider-Man,\''\
     ' then type out the edited text as requested, in quotes.'
 
+
 @client.event
 async def on_ready():
     '''
@@ -81,10 +82,10 @@ async def on_ready():
     print(f"J. Jonah Jameson is ready. Connected to {len(client.guilds)} guild(s).\n")
 
 
-async def send_llm_msg(msg, ctx):
+async def send_llm_msg(msg):
     '''
     Schedule the LLM request
-    Print prompt and response
+    Return and print prompt and response
     '''
     # Format prompt for chosen substyle
     LLM_SUBSTYLE = os.getenv('LLM_SUBSTYLE')
@@ -146,19 +147,19 @@ async def on_message(ctx):
 
     # Show the prompt if the user types [show_prompt] anywhere in the message
     verbose_flag = '[show_prompt]'
-    if verbose_flag in msg:
-        inter_msg = msg.partition(verbose_flag)
-        msg = inter_msg[0] + inter_msg[2]
+    if verbose_flag in clean_msg:
+        inter_msg = clean_msg.partition(verbose_flag)
+        clean_msg = inter_msg[0] + inter_msg[2]
         await ctx.channel.send(f'`PROMPT: {prompt}`')
-        await ctx.channel.send(f'`INPUT: {msg}`')
+        await ctx.channel.send(f'`INPUT: {clean_msg}`')
 
 
     # Send message to discord containing throbber:
-    msg = await ctx.channel.send('<a:oori_throbber:1119445227732742265>')
+    return_msg = await ctx.channel.send('<a:oori_throbber:1119445227732742265>')
 
     # Collect task coroutines
     tasks = [
-        asyncio.create_task(send_llm_msg(clean_msg, ctx)), 
+        asyncio.create_task(send_llm_msg(clean_msg)), 
         asyncio.create_task(throbber())
         ]
 
@@ -177,10 +178,10 @@ async def on_message(ctx):
     # Edit the discord message to be the LLM response
     if not done:
         print('LLM not responding!', end='\r')
-        await msg.edit(content='`LLM not responding!`')
+        await return_msg.edit(content='`LLM not responding!`')
     else:
         response = next(iter(done)).result()
-        await msg.edit(content=response)
+        await return_msg.edit(content=response)
 
 
 def main():

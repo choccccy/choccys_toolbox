@@ -39,6 +39,7 @@ python demo/alpaca_simple_qa_discord.py
 # Import standard libraries
 import os
 import asyncio
+import time
 
 # Import discord.py for interaction with Discord API
 import discord
@@ -131,6 +132,9 @@ async def on_message(ctx):
     '''
     Message receipt and response
     '''
+    # Start a timer
+    timer = time.time()
+
     # Ignore the bot's own messages & respond only to @mentions
     # The client.user.id check creens out @everyone & @here pings
     # FIXME: Better content check—what if the bot's id is a common word?
@@ -145,16 +149,21 @@ async def on_message(ctx):
     inter_msg = ctx.content.partition(mention_str)
     clean_msg = inter_msg[0] + inter_msg[2]
 
+    # Set up a verbose flag
+    verbose_flag = False
+
     # Show the prompt if the user types [show_prompt] anywhere in the message
-    verbose_flag = '[show_prompt]'
-    if verbose_flag in clean_msg:
-        inter_msg = clean_msg.partition(verbose_flag)
-        clean_msg = inter_msg[0] + inter_msg[2]
+    verbose_mark = '[verbose]'
+    if verbose_mark in clean_msg:
+        verbose_flag = True
+        cleaned_msg = clean_msg.partition(verbose_mark)
+        clean_msg = cleaned_msg[0] + cleaned_msg[2]
+
         await ctx.channel.send(f'`PROMPT: {prompt}`')
         await ctx.channel.send(f'`INPUT: {clean_msg}`')
+        #await ctx.channel.send(f'`MODEL: {model}`') ToDo: get model from Sofola
 
-
-    # Send message to discord containing throbber:
+    # Send throbber placeholder message to discord:
     return_msg = await ctx.channel.send('<a:oori_throbber:1119445227732742265>')
 
     # Collect task coroutines
@@ -182,6 +191,13 @@ async def on_message(ctx):
     else:
         response = next(iter(done)).result()
         await return_msg.edit(content=response)
+    
+    # Send "RESPONSE TIME:" message to discord if verbose_flag is True
+    response_time = time.time() - timer
+    response_time = round(response_time, 1)
+    print(f'RESPONSE TIME: {response_time} seconds')
+    if verbose_flag is True:
+        await ctx.channel.send(f'`RESPONSE TIME: {response_time} seconds`')
 
 
 def main():

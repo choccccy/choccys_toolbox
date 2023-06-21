@@ -10,15 +10,15 @@ only the latter will complete.
 
 You need access to an OpenAI-like service. Default assumption is that you
 have a self-hosted framework such as llama-cpp-python or text-generation-webui
-running. Say it's at my-llm-host:8000, you can do:
+running. The demo assumes your API host is at `my-llm-host:8000`.
 
 Prerequisites: python-dotenv discord.py
 
 You also need to make sure Python has root SSL certificates installed
 On Mac this is via double-clicking `Install Certificates.command`
 
-You also need to have a file, just named `.env`, in the same directory,
-with contents such as:
+You also need to have a file, just named `jjonah.env`, in the same directory as 
+`alpaca_simple_jjonah.py`, with contents such as:
 
 ```env
 DISCORD_TOKEN={your-bot-token}
@@ -29,6 +29,7 @@ LLM_SUBSTYLE=ALPACA_INSTRUCT
 LLM_TIMEOUT=60
 ```
 
+The bot assumes you are launching it from `/choccys_toolbox/`
 Then to launch the bot:
 
 ```shell
@@ -71,8 +72,8 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 # Set up prompt
-prompt = 'quip as if you are the character \'J. Jonah Jameson\' from \'Spider-Man,\''\
-    ' then type out the edited text as requested, in quotes.'
+prompt = 'Quip as if you are the character \'J. Jonah Jameson\' from the \'Spider-Man,\' comic books'\
+    ' then type out the edited text as the user requests, in quotes.'
 
 
 @client.event
@@ -192,10 +193,12 @@ async def on_message(ctx):
         response = next(iter(done)).result()
         await return_msg.edit(content=response)
     
-    # Send "RESPONSE TIME:" message to discord if verbose_flag is True
+    # Send "RESPONSE TIME:" message to console and to discord if verbose_flag is True
     response_time = time.time() - timer
     response_time = round(response_time, 1)
+
     print(f'RESPONSE TIME: {response_time} seconds')
+
     if verbose_flag is True:
         await ctx.channel.send(f'`RESPONSE TIME: {response_time} seconds`')
 

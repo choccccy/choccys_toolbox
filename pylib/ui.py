@@ -10,12 +10,15 @@ import asyncio
 THROBBER_GFX = ["◢", "◣", "◤", "◥"]
 
 
-async def throbber(frame_time: float=0.15):
+async def console_throbber(frame_time: float=0.15):
     '''
-    prints a spinning throbber with a frame time as argument
+    Prints a spinning throbber to console with a frame time as argument
     '''
-
-    while True:                                        # Loop forever (until cancelled)
-        for frame in THROBBER_GFX:                     # cycle next frame
-            print(f" [{frame}]", end="\r", flush=True) # print frame
-            await asyncio.sleep(frame_time)            # sleep for frame-time
+    # Loop forever (until cancelled)
+    while True:
+        # cycle next frame
+        for frame in THROBBER_GFX:
+            # print frame
+            print(f" [{frame}]", end="\r", flush=True)
+            # sleep for frame-time
+            await asyncio.sleep(frame_time)

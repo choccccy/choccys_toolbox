@@ -15,6 +15,134 @@ All other settings in DCE can be left default (although using the "MORE" button
 when exporting and only exporting chat from after when you've joined a given 
 server can reduce file size and scraping time signifigantly).
 '''
-# import the JSON library to read files generated from DCE
+
+# Import pathlib to run around the user's system
+import pathlib
+
+# Import the JSON library to read files generated from DCE
 import json
 
+# Import time for telemetry
+import time
+
+# Import click for CLI arguments
+import click
+
+
+def extractor(file_path):
+    '''
+    TODO: docstring
+    '''
+
+    # Open logs.json as "raw_logs"
+    with open(file_path, 'r') as logs_json:
+        raw_logs = json.load(logs_json)
+
+    # Create list of all messages in logs.json
+    raw_messages = []
+
+    for log in raw_logs['messages']:
+        # Only grab "normal" messages
+        if (log['type'] in ('Default', 'Reply')) \
+                and (log['content'] != ''): 
+            cleaned_message = (
+                log['content'], 
+                log['author']['name'], 
+                log['author']['discriminator'],
+                )
+            raw_messages.append(cleaned_message)
+    
+    print(f'Loaded {len(raw_messages)} messages from {file_path}')
+
+    return raw_messages
+
+
+def contextualizer(
+        raw_messages, 
+        discord_user, 
+        discord_discriminator, 
+        context_messages
+        ):
+    '''
+    TODO: docstring
+    '''
+    # Go through each message
+    contextualized_messages = []
+    for index, message in enumerate(raw_messages):
+        # Only work with messages by the user in question
+        if message[1] == discord_user and message[2] == discord_discriminator:
+            # Backtrack through the list of messages to collect context
+            context = []
+            for backtrack in range(1 + context_messages, 1, -1):
+                context.append(raw_messages[index - backtrack])
+            context_message_pair = (message, context)
+
+            # Add the pair to the list of contextualized messages
+            contextualized_messages.append(context_message_pair)
+
+    print(f'Reduced to {len(contextualized_messages)} context-message pairs')
+
+    return contextualized_messages
+
+
+@click.command()
+@click.option(
+    '--discord_user', 
+    required=True, 
+    help='Username (not nickname) of the Discord '\
+        'user the logs will be trimmed around')
+@click.option(
+    '--discord_discriminator', 
+    default='0000',
+    help='Discriminator of the user in question. '\
+        'Only required if the user still has a discriminator number')
+@click.option(
+    '--context_messages', 
+    default=6,
+    help='How many messages worth of context to '\
+        'include for each of the user\'s messages')
+@click.option(
+    '--input_path', 
+    default='inbox/', 
+    help='path to input folder. uses /discord_log_trimmer/inbox by default')
+@click.option(
+    '--output_path', 
+    default='outbox/', 
+    help='path to output folder. uses /discord_log_trimmer/outbox by default')
+def main(
+        discord_user, 
+        discord_discriminator, 
+        context_messages, 
+        input_path, 
+        output_path
+        ):
+    '''
+    TODO: docstring
+    '''
+    # Use pathlib for file paths
+    input_path = pathlib.Path(input_path)
+    output_path = pathlib.Path(output_path)
+
+    # Loop through every file in the input path
+    for file_path in input_path.glob('*.json'):
+        print('=' * 80)
+
+        # Run extractor to just get messages and their respective authors
+        raw_messages = extractor(file_path)
+
+        # Run trimmer to get only "context_messages"
+        contextual_pairs = contextualizer(
+            raw_messages, 
+            discord_user, 
+            discord_discriminator, 
+            context_messages
+            )
+        
+        with open(f'{output_path}/{file_path.stem}.json', 'w') as json_file:
+            json.dump(contextual_pairs, json_file, indent=4)
+    
+    return
+
+
+if __name__ == '__main__':
+    main()

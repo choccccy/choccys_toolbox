@@ -1,3 +1,6 @@
+**/inbox
+**/outbox
 
 **/*.env
 .DS_Store
+.vscode/
